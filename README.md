@@ -18,8 +18,8 @@ Este repositorio contiene un conjunto de microservicios para gestionar comercios
 ## Requisitos (local)
 
 - Node 18+ (recomendado)
-- npm 9+ o yarn
-- PostgreSQL (si no usas Docker)
+- npm 9+
+- PostgreSQL
 
 ## Variables de entorno
 
@@ -27,7 +27,7 @@ Cada servicio expone su propio `.env` o lee variables desde el entorno. Ejemplo 
 
 DATABASE_URL="postgresql://user:pass@localhost:5432/dbname?schema=public"
 PORT=3001
-API_KEY=tu_api_key_de_prueba
+API_KEY=key
 
 ## Instalación y generación de cliente Prisma
 
@@ -107,15 +107,3 @@ npm run format
 - Puerto ocupado (EADDRINUSE): cierra procesos que ocupen `3001` o cambia `PORT`.
 - Prisma v7: el cliente y la configuración pueden requerir `prisma.config.ts` y el adaptador `@prisma/adapter-pg` si se conecta directamente con `pg`.
 - Si ves advertencias de TypeScript relacionadas con decoradores o `experimentalDecorators`, asegúrate que `tsconfig.json` tiene `experimentalDecorators` y `emitDecoratorMetadata` habilitados.
-
-## Contribuir / Siguientes pasos
-
-- Ejecuta las pruebas y lint antes de abrir PRs.
-- Añade más validación y manejo de errores en los endpoints críticos (ej.: `amount`/`currency` checks, idempotencia de transacciones).
-
-## Contacto
-
-- Si necesitas que adapte el README con pasos más detallados para despliegue, CI/CD o ejemplos de requests (Postman/Insomnia), dime qué prefieres y lo añado.
-
----
-Archivo generado automáticamente por el asistente — puedo ampliar secciones concretas si lo deseas.
