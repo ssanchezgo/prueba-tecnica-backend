@@ -8,7 +8,6 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // Prefijo para cumplir con el estándar de versionamiento
   app.setGlobalPrefix('api/v1');
 
   // Configuración estricta de validación para los DTOs

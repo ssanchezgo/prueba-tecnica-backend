@@ -5,7 +5,7 @@ import { Pool } from 'pg';
 
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
-  private client: PrismaClient;
+  private readonly client: PrismaClient;
 
   constructor() {
     const connectionString = process.env.DATABASE_URL;
@@ -26,20 +26,28 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     await this.client.$disconnect();
   }
 
-  // Delegate Prisma properties
-  get merchant(): PrismaClient['merchant'] {
+  /**
+   * Exponemos el método $transaction nativo.
+   * Esto permite usar: await this.prisma.$transaction(async (tx) => { ... })
+   */
+  get $transaction() {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return this.client.$transaction.bind(this.client);
+  }
+
+  get merchant() {
     return this.client.merchant;
   }
 
-  get transaction(): PrismaClient['transaction'] {
+  get transaction() {
     return this.client.transaction;
   }
 
-  get settlement(): PrismaClient['settlement'] {
+  get settlement() {
     return this.client.settlement;
   }
 
-  get settlementTransaction(): PrismaClient['settlementTransaction'] {
+  get settlementTransaction() {
     return this.client.settlementTransaction;
   }
 }
