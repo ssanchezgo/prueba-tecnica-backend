@@ -1,4 +1,4 @@
-# istema de gestion de pagos — Prueba técnica (Backend)
+# sistema de gestion de pagos — Prueba técnica (Backend)
 
 Este repositorio contiene un conjunto de microservicios para gestionar comercios, transacciones y liquidaciones. Está orientado a pruebas técnicas y ejemplos de integración con Prisma + PostgreSQL.
 
