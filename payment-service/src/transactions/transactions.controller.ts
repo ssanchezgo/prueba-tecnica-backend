@@ -7,44 +7,63 @@ import {
   Param,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
-import { Transaction } from '@prisma/client';
 import { QueryTransactionDto } from './dto/query-transaction.dto';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiKeyGuard } from '../common/guards/api-key.guard';
+import { ApiSecurity } from '@nestjs/swagger';
+import { GetMerchant } from 'src/common/decorators/get-merchant.decorator';
+import { type Merchant } from '@prisma/client';
 
+@ApiTags('Transactions')
+@ApiSecurity('api-key')
+@UseGuards(ApiKeyGuard)
 @Controller('transactions')
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Crear una nueva transacción' })
+  @ApiResponse({ status: 201, description: 'Transacción creada exitosamente.' })
   async create(
     @Body() createTransactionDto: CreateTransactionDto,
-  ): Promise<Transaction> {
-    return await this.transactionsService.create(createTransactionDto);
+    @GetMerchant() merchant: Merchant,
+  ) {
+    return this.transactionsService.create(createTransactionDto, merchant);
   }
 
   @Get()
-  async findAll(@Query() query: QueryTransactionDto): Promise<Transaction[]> {
-    return await this.transactionsService.findAll(query);
+  @ApiOperation({
+    summary: 'Obtener lista de transacciones con filtros y paginación',
+  })
+  findAll(@Query() query: QueryTransactionDto) {
+    return this.transactionsService.findAll(query);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<Transaction> {
-    return await this.transactionsService.findOne(id);
+  @ApiOperation({ summary: 'Obtener una transacción por ID' })
+  findOne(@Param('id') id: string) {
+    return this.transactionsService.findOne(id);
   }
 
   @Patch(':id/status')
-  async updateStatus(
+  @ApiOperation({
+    summary: 'Actualizar el estado de una transacción (Máquina de estados)',
+  })
+  updateStatus(
     @Param('id') id: string,
-    @Body() updateDto: UpdateStatusDto,
-  ): Promise<Transaction> {
-    return await this.transactionsService.updateStatus(id, updateDto);
+    @Body() updateStatusDto: UpdateStatusDto,
+  ) {
+    return this.transactionsService.updateStatus(id, updateStatusDto);
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string): Promise<Transaction> {
-    return await this.transactionsService.remove(id);
+  @ApiOperation({ summary: 'Eliminar una transacción' })
+  remove(@Param('id') id: string) {
+    return this.transactionsService.remove(id);
   }
 }
