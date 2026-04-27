@@ -4,12 +4,15 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // Corregido: Solo pasamos el nombre de la variable. 
+  // La URL real se define en el docker-compose.yml o el archivo .env
+  url      = env("DATABASE_URL")
 }
 
 // --- Enums ---
 enum MerchantStatus {
   active
-  inactive
+  inactiv
 }
 
 enum Currency {
@@ -51,7 +54,7 @@ model Merchant {
   transactions Transaction[]
   settlements  Settlement[]
 
-  @@index([status]) // Índice para búsquedas por estado
+  @@index([status])
   @@map("merchants")
 }
 
@@ -67,7 +70,7 @@ model Transaction {
   created_at  DateTime          @default(now())
   updated_at  DateTime          @updatedAt
 
-  merchant               Merchant                @relation(fields: [merchant_id], references: [id])
+  merchant               Merchant               @relation(fields: [merchant_id], references: [id])
   settlement_transaction SettlementTransaction?
 
   @@index([merchant_id])
@@ -95,7 +98,7 @@ model Settlement {
 
 model SettlementTransaction {
   settlement_id  String @db.Uuid
-  transaction_id String @unique @db.Uuid // Unicidad garantizada para que no se repitan en liquidaciones
+  transaction_id String @unique @db.Uuid
 
   settlement  Settlement  @relation(fields: [settlement_id], references: [id])
   transaction Transaction @relation(fields: [transaction_id], references: [id])
