@@ -26,6 +26,7 @@ services:
   payment-service:
     build:
       context: ./payment-service
+      dockerfile: dockerfile
     container_name: payment_service
     environment:
       DATABASE_URL: "postgresql://admin:123456789@postgres:5432/payments_admin?schema=public"
@@ -42,18 +43,25 @@ services:
   notification-service: 
     build:
       context: ./notification-service
+      dockerfile: Dockerfile
     container_name: notification_service
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - DATABASE_URL=postgresql://admin:123456789@postgres:5432/payments_admin?schema=public
+      - PORT=3002
     depends_on:
-      - redis
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "3002:3002"
 
   api-gateway:
     build:
       context: ./api-gateway
+      dockerfile: dockerfile
     container_name: api_gateway
     environment:
       PORT: 3000
