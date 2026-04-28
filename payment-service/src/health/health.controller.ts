@@ -1,29 +1,40 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheckService, HealthCheck, PrismaHealthIndicator } from '@nestjs/terminus';
+import {
+  HealthCheckService,
+  HealthCheck,
+  HealthCheckResult,
+} from '@nestjs/terminus';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('health')
 export class HealthController {
   constructor(
     private health: HealthCheckService,
-    private db: PrismaHealthIndicator,
     private prisma: PrismaService,
   ) {}
 
   @Get()
   @HealthCheck()
-  async check() {
-    const result = await this.health.check([
-      () => this.db.pingCheck('database', this.prisma),
+  async check(): Promise<HealthCheckResult> {
+    return this.health.check([
+      async () => {
+        try {
+          // Simple query to check database connection
+          await this.prisma.merchant.findFirst();
+          return {
+            database: {
+              status: 'up',
+            },
+          };
+        } catch (error) {
+          return {
+            database: {
+              status: 'down',
+              message: error instanceof Error ? error.message : 'Unknown error',
+            },
+          };
+        }
+      },
     ]);
-
-    // Formato exacto requerido por la prueba
-    return {
-      status: result.status === 'error' ? 'error' : 'ok',
-      service: 'payment-service',
-      uptime: process.uptime(),
-      database: result.status === 'ok' ? 'connected' : 'disconnected',
-      timestamp: new Date().toISOString(),
-    };
   }
 }
