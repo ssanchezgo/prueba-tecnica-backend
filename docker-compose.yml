@@ -5,7 +5,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: your_password_here
+      POSTGRES_PASSWORD: 123456789
       POSTGRES_DB: payments_admin
     ports:
       - "5433:5432"
@@ -17,18 +17,39 @@ services:
       timeout: 5s
       retries: 5
 
+  redis: 
+    image: redis:alpine
+    container_name: payment_redis
+    ports:
+      - "6379:6379"
+
   payment-service:
     build:
       context: ./payment-service
     container_name: payment_service
     environment:
       DATABASE_URL: "postgresql://admin:123456789@postgres:5432/payments_admin?schema=public"
+      REDIS_HOST: redis 
       PORT: 3001
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     ports:
       - "3001:3001"
+
+  notification-service: 
+    build:
+      context: ./notification-service
+    container_name: notification_service
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://admin:123456789@postgres:5432/payments_admin?schema=public
+    depends_on:
+      - redis
+      - postgres
 
   api-gateway:
     build:
