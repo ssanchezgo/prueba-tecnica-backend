@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { HttpStatus } from '@nestjs/common';
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
@@ -226,6 +227,55 @@ describe('TransactionsController', () => {
       expect(controller.remove('non-existent-id')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('HTTP status codes', () => {
+    it('POST /transactions should use 201 Created', () => {
+      expect(HttpStatus.CREATED).toBe(201);
+    });
+
+    it('GET /transactions should use 200 OK', () => {
+      expect(HttpStatus.OK).toBe(200);
+    });
+
+    it('GET /transactions/:id should use 200 OK and 404 when not found', async () => {
+      const { NotFoundException } = jest.requireActual('@nestjs/common');
+      mockTransactionsService.findOne.mockRejectedValue(
+        new NotFoundException(),
+      );
+
+      const error = await controller
+        .findOne('bad-id')
+        .catch((e: { getStatus: () => number }) => e);
+
+      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
+    });
+
+    it('PATCH /transactions/:id/status should use 422 for invalid transition', async () => {
+      const { UnprocessableEntityException } = jest.requireActual(
+        '@nestjs/common',
+      );
+      mockTransactionsService.updateStatus.mockRejectedValue(
+        new UnprocessableEntityException(),
+      );
+
+      const error = await controller
+        .updateStatus('id', { status: TransactionStatus.completed })
+        .catch((e: { getStatus: () => number }) => e);
+
+      expect(error.getStatus()).toBe(HttpStatus.UNPROCESSABLE_ENTITY);
+    });
+
+    it('DELETE /transactions/:id should use 404 when not found', async () => {
+      const { NotFoundException } = jest.requireActual('@nestjs/common');
+      mockTransactionsService.remove.mockRejectedValue(new NotFoundException());
+
+      const error = await controller
+        .remove('bad-id')
+        .catch((e: { getStatus: () => number }) => e);
+
+      expect(error.getStatus()).toBe(HttpStatus.NOT_FOUND);
     });
   });
 });

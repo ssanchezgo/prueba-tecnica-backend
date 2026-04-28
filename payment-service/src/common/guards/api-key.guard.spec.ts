@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { ApiKeyGuard } from './api-key.guard';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -159,6 +159,46 @@ describe('ApiKeyGuard', () => {
       expect(mockRequest['merchant']).toBeDefined();
       expect(mockRequest['merchant'].id).toBe(mockMerchant.id);
       expect(mockRequest['merchant'].api_key).toBe(mockMerchant.api_key);
+    });
+  });
+
+  describe('HTTP status codes', () => {
+    const makeContext = (apiKey?: string) =>
+      ({
+        switchToHttp: () => ({
+          getRequest: () => ({ headers: apiKey ? { 'x-api-key': apiKey } : {} }),
+        }),
+      }) as ExecutionContext;
+
+    it('should return 401 when API key is missing', async () => {
+      const error = await guard
+        .canActivate(makeContext())
+        .catch((e: UnauthorizedException) => e);
+
+      expect(error.getStatus()).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('should return 401 when API key is invalid', async () => {
+      mockPrismaService.merchant.findUnique.mockResolvedValue(null);
+
+      const error = await guard
+        .canActivate(makeContext('bad-key'))
+        .catch((e: UnauthorizedException) => e);
+
+      expect(error.getStatus()).toBe(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('should return 401 when merchant is inactive', async () => {
+      mockPrismaService.merchant.findUnique.mockResolvedValue({
+        ...mockMerchant,
+        status: 'inactiv' as const,
+      });
+
+      const error = await guard
+        .canActivate(makeContext('valid-api-key'))
+        .catch((e: UnauthorizedException) => e);
+
+      expect(error.getStatus()).toBe(HttpStatus.UNAUTHORIZED);
     });
   });
 });

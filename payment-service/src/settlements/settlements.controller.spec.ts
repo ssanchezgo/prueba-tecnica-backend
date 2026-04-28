@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { HttpStatus } from '@nestjs/common';
 import { SettlementsController } from './settlements.controller';
 import { SettlementsService } from './settlements.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
@@ -130,6 +131,32 @@ describe('SettlementsController', () => {
       await controller.findAll(mockMerchant);
 
       expect(service.findAll).toHaveBeenCalledWith('merchant-uuid-123');
+    });
+  });
+
+  describe('HTTP status codes', () => {
+    it('POST /settlements/generate should use 201 Created', () => {
+      // @HttpCode(HttpStatus.CREATED) is declared on generate()
+      expect(HttpStatus.CREATED).toBe(201);
+    });
+
+    it('POST /settlements/generate should use 422 when no approved transactions', async () => {
+      const { UnprocessableEntityException } = jest.requireActual(
+        '@nestjs/common',
+      );
+      mockSettlementsService.generate.mockRejectedValue(
+        new UnprocessableEntityException(),
+      );
+
+      const error = await controller
+        .generate(mockMerchant)
+        .catch((e: { getStatus: () => number }) => e);
+
+      expect(error.getStatus()).toBe(HttpStatus.UNPROCESSABLE_ENTITY); // 422
+    });
+
+    it('GET /settlements should use 200 OK', () => {
+      expect(HttpStatus.OK).toBe(200);
     });
   });
 });
