@@ -1,11 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 interface NotificationData {
   transaction_id: string;
   merchant_id: string;
   event_type: string;
-  payload: unknown;
+  payload: Prisma.InputJsonValue;
 }
 
 @Injectable()
