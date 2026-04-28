@@ -258,7 +258,10 @@ describe('TransactionsService', () => {
         status: TransactionStatus.approved,
       });
 
-      const result = await service.updateStatus('transaction-uuid-123', updateDto);
+      const result = await service.updateStatus(
+        'transaction-uuid-123',
+        updateDto,
+      );
 
       expect(result.status).toBe(TransactionStatus.approved);
       expect(mockPrismaService.transaction.update).toHaveBeenCalledWith({
@@ -290,7 +293,10 @@ describe('TransactionsService', () => {
         status: TransactionStatus.completed,
       });
 
-      const result = await service.updateStatus('transaction-uuid-123', updateDto);
+      const result = await service.updateStatus(
+        'transaction-uuid-123',
+        updateDto,
+      );
 
       expect(result.status).toBe(TransactionStatus.completed);
     });

@@ -4,7 +4,6 @@ import { PrismaService } from './prisma/prisma.service';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
-  let prismaService: PrismaService;
 
   const mockNotificationData = {
     transaction_id: 'tx-uuid-123',
@@ -49,7 +48,6 @@ describe('NotificationsService', () => {
     }).compile();
 
     service = module.get<NotificationsService>(NotificationsService);
-    prismaService = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });
@@ -184,25 +182,25 @@ describe('NotificationsService', () => {
   });
 
   describe('findOne', () => {
-    it('should return a notification by id', () => {
+    it('should return a notification by id', async () => {
       mockPrismaService.notification.findUnique.mockResolvedValue(
         mockNotification,
       );
 
-      const result = service.findOne('notification-uuid-123');
+      const result = await service.findOne('notification-uuid-123');
 
-      expect(result).resolves.toEqual(mockNotification);
+      expect(result).toEqual(mockNotification);
       expect(mockPrismaService.notification.findUnique).toHaveBeenCalledWith({
         where: { id: 'notification-uuid-123' },
       });
     });
 
-    it('should return null if notification not found', () => {
+    it('should return null if notification not found', async () => {
       mockPrismaService.notification.findUnique.mockResolvedValue(null);
 
-      const result = service.findOne('non-existent-id');
+      const result = await service.findOne('non-existent-id');
 
-      expect(result).resolves.toBeNull();
+      expect(result).toBeNull();
     });
   });
 });

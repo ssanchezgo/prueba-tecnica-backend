@@ -129,9 +129,7 @@ describe('ApiKeyGuard', () => {
         }),
       } as ExecutionContext;
 
-      mockPrismaService.merchant.findUnique.mockResolvedValue(
-        inactiveMerchant,
-      );
+      mockPrismaService.merchant.findUnique.mockResolvedValue(inactiveMerchant);
 
       await expect(guard.canActivate(mockContext)).rejects.toThrow(
         UnauthorizedException,
