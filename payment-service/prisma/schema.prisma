@@ -4,9 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // Corregido: Solo pasamos el nombre de la variable. 
-  // La URL real se define en el docker-compose.yml o el archivo .env
-  url      = env("DATABASE_URL")
 }
 
 // --- Enums ---

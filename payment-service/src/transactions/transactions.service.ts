@@ -2,29 +2,30 @@ import {
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
+  Inject,
 } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
-import { 
-  TransactionStatus, 
-  Transaction, 
-  Prisma, 
-  TransactionType, 
-  Merchant 
+import {
+  TransactionStatus,
+  Transaction,
+  Prisma,
+  TransactionType,
+  Merchant,
 } from '@prisma/client';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { QueryTransactionDto } from './dto/query-transaction.dto';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject('NOTIFICATIONS_SERVICE') private readonly client: ClientProxy,
+  ) {}
 
-  /**
-   * Crea una transacción vinculada al merchant autenticado.
-   * La validación de existencia y estado del merchant ya fue realizada por el ApiKeyGuard.
-   */
   async create(
-    createTransactionDto: CreateTransactionDto, 
+    createTransactionDto: CreateTransactionDto,
     merchant: Merchant,
   ): Promise<Transaction> {
     const reference = await this.generateUniqueReference();
@@ -32,21 +33,16 @@ export class TransactionsService {
     const data: Prisma.TransactionUncheckedCreateInput = {
       reference,
       status: TransactionStatus.pending,
-      merchant_id: merchant.id, // ID obtenido directamente del guard
+      merchant_id: merchant.id,
       amount: createTransactionDto.amount,
       currency: createTransactionDto.currency,
       type: createTransactionDto.type,
-      metadata:
-        (createTransactionDto.metadata as Prisma.InputJsonValue) ??
-        Prisma.JsonNull,
+      metadata: createTransactionDto.metadata ?? Prisma.JsonNull,
     };
 
     return this.prisma.transaction.create({ data });
   }
 
-  /**
-   * Obtiene transacciones con soporte para filtros y paginación.
-   */
   async findAll(query: QueryTransactionDto): Promise<any> {
     const { merchant_id, status, type, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
@@ -71,29 +67,22 @@ export class TransactionsService {
       meta: {
         total,
         page: Number(page),
-        last_page: Math.ceil(total / limit),
+        limit: Number(limit),
+        total_pages: Math.ceil(total / limit),
       },
     };
   }
 
-  /**
-   * Busca una transacción específica por ID.
-   */
   async findOne(id: string): Promise<Transaction> {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id },
     });
-    
     if (!transaction) {
       throw new NotFoundException(`Transacción con ID ${id} no encontrada`);
     }
-    
     return transaction;
   }
 
-  /**
-   * Gestiona el cambio de estados siguiendo la máquina de estados definida.
-   */
   async updateStatus(
     id: string,
     updateDto: UpdateStatusDto,
@@ -101,7 +90,7 @@ export class TransactionsService {
     const currentTx = await this.findOne(id);
     const newStatus = updateDto.status;
 
-    // Reglas de transición (Requisito 2.1a)
+    // Máquina de estados
     const allowed: Record<TransactionStatus, TransactionStatus[]> = {
       [TransactionStatus.pending]: [
         TransactionStatus.approved,
@@ -119,27 +108,31 @@ export class TransactionsService {
 
     if (!allowed[currentTx.status].includes(newStatus)) {
       throw new UnprocessableEntityException(
-        `Transición inválida: No se puede pasar de ${currentTx.status} a ${newStatus}`,
+        `Transición inválida: No se puede pasar de '${currentTx.status}' a '${newStatus}'`, // Requisito 2.1a
       );
     }
 
-    return this.prisma.transaction.update({
+    const updatedTx = await this.prisma.transaction.update({
       where: { id },
       data: { status: newStatus },
     });
+
+    // EMISIÓN DEL EVENTO ASÍNCRONO
+    this.client.emit('transaction_status_updated', {
+      transaction_id: updatedTx.id,
+      merchant_id: updatedTx.merchant_id,
+      event_type: `transaction.${newStatus}`,
+      payload: updatedTx,
+    });
+
+    return updatedTx;
   }
 
-  /**
-   * Elimina un registro de transacción.
-   */
   async remove(id: string): Promise<Transaction> {
     await this.findOne(id);
     return this.prisma.transaction.delete({ where: { id } });
   }
 
-  /**
-   * Genera una referencia alfanumérica única con formato TXN-YYYYMMDD-XXXXXX.
-   */
   private async generateUniqueReference(): Promise<string> {
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     let reference = '';
@@ -150,7 +143,7 @@ export class TransactionsService {
         .toString(36)
         .substring(2, 8)
         .toUpperCase();
-      reference = `TXN-${date}-${randomChars}`;
+      reference = `TXN-${date}-${randomChars}`; // Formato Requisito 2.1b
 
       const exists = await this.prisma.transaction.findUnique({
         where: { reference },
