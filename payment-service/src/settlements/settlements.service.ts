@@ -43,7 +43,6 @@ export class SettlementsService {
         settlementTransaction: {
           create: (arg0: {
             data: {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               settlement_id: any;
               transaction_id: string;
             };

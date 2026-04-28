@@ -1,4 +1,11 @@
-import { Controller, Post, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { SettlementsService } from './settlements.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
 import { GetMerchant } from '../common/decorators/get-merchant.decorator';

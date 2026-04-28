@@ -10,8 +10,6 @@ const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost
 const JWT_SECRET = process.env.JWT_SECRET || 'PRUEBA_TECNICA_SECRET_KEY';
 
 app.use(express.json());
-
-// --- 3.4 Rate Limiting en Memoria ---
 const rateLimitMap = new Map();
 const LIMIT = 100;
 const WINDOW_MS = 60000;
@@ -45,7 +43,7 @@ setInterval(() => {
   }
 }, WINDOW_MS);
 
-// --- 3.2 Autenticación Dual ---
+
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const apiKey = req.headers['x-api-key'];
@@ -76,10 +74,7 @@ app.use(morgan((tokens, req, res) => {
   ].join(' ');
 }));
 
-// --- 3.1 Proxy Centralizado ---
-// Usamos una Regex para capturar todo lo que venga después de /api/v1/
 app.all(/^\/api\/v1\/(.*)/, rateLimiter, authMiddleware, async (req, res) => {
-  // En Express con Regex, el grupo capturado (.*) está en req.params[0]
   const path = req.params[0];
   const targetUrl = `${PAYMENT_SERVICE_URL}/${path}`;
   

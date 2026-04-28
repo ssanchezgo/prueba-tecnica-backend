@@ -50,7 +50,7 @@ export class TransactionsService {
     const where: Prisma.TransactionWhereInput = {};
     if (merchant_id) where.merchant_id = merchant_id;
     if (status) where.status = status;
-    if (type) where.type = type as TransactionType;
+    if (type) where.type = type;
 
     const [transactions, total] = await Promise.all([
       this.prisma.transaction.findMany({
